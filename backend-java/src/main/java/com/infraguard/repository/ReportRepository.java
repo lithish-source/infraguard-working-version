@@ -87,4 +87,11 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
         SELECT AVG(r.verificationCount) FROM Report r
         """)
     Double avgVerificationsPerReport();
+
+    @Query("""
+        SELECT r FROM Report r
+        LEFT JOIN FETCH r.infrastructureType
+        WHERE r.status <> 'Rejected'
+        """)
+    List<Report> findAllForClustering();
 }
