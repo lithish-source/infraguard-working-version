@@ -1,0 +1,71 @@
+# ============================================================
+# InfraGuard — Docker Compose (Java Spring Boot Backend)
+# Usage:  docker compose up --build
+# ============================================================
+services:
+  # -------- PostgreSQL + PostGIS --------
+  db:
+    image: postgis/postgis:15-3.4
+    container_name: infraguard-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: infraguard
+      POSTGRES_PASSWORD: infraguard
+      POSTGRES_DB: infraguard
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U infraguard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -------- Backend (Java Spring Boot) --------
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend-java.Dockerfile
+    container_name: infraguard-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/infraguard
+      POSTGRES_USER: infraguard
+      POSTGRES_PASSWORD: infraguard
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_me_in_production_a1b2c3d4e5f6g7h8}
+      BACKEND_CORS_ORIGINS: http://localhost,http://localhost:5173,http://127.0.0.1:5173
+      UPLOAD_DIR: /app/uploads
+      DEFAULT_ADMIN_EMAIL: admin@infraguard.gov
+      DEFAULT_ADMIN_PASSWORD: Admin@12345
+      DEFAULT_ADMIN_NAME: System Administrator
+      # Optional LLM API integration (Llama 4 via Groq)
+      # Get a free key at https://console.groq.com
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_API_BASE_URL: ${LLM_API_BASE_URL:-https://api.groq.com/openai/v1}
+      LLM_VISION_MODEL: ${LLM_VISION_MODEL:-meta-llama/llama-4-scout-17b-16e-instruct}
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads:/app/uploads
+
+  # -------- Frontend (React + nginx) --------
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    container_name: infraguard-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  pgdata:
+  uploads:

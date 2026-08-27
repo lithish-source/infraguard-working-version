@@ -1,0 +1,30 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [73.8567, 18.5204] },
+      "properties": { "name": "Central District", "code": "CD", "population": 850000, "area_sq_km": 75.0 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [73.8267, 18.5804] },
+      "properties": { "name": "North District", "code": "ND", "population": 620000, "area_sq_km": 92.0 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [73.8667, 18.4604] },
+      "properties": { "name": "South District", "code": "SD", "population": 730000, "area_sq_km": 88.0 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [73.9367, 18.5404] },
+      "properties": { "name": "East District", "code": "ED", "population": 540000, "area_sq_km": 110.0 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [73.7867, 18.5104] },
+      "properties": { "name": "West District", "code": "WD", "population": 690000, "area_sq_km": 84.0 }
+    }
+  ]
+}

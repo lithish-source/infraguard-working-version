@@ -1,0 +1,112 @@
+[
+  {
+    "title": "Large pothole on MG Road",
+    "description": "A large pothole near the MG Road signal is causing traffic to slow down significantly. Two-wheelers are at risk of skidding.",
+    "category_code": "ROAD",
+    "latitude": 18.5293,
+    "longitude": 73.8567,
+    "district_code": "CD",
+    "address": "MG Road, near CM Halli signal",
+    "severity": "High",
+    "status": "Verified"
+  },
+  {
+    "title": "Bridge support crack visible",
+    "description": "A visible crack on the support pillar of the Khadki railway overbridge. Needs urgent structural inspection.",
+    "category_code": "BRIDGE",
+    "latitude": 18.5661,
+    "longitude": 73.8387,
+    "district_code": "ND",
+    "address": "Khadki railway overbridge",
+    "severity": "Critical",
+    "status": "Assigned"
+  },
+  {
+    "title": "Streetlight not working for 3 days",
+    "description": "The streetlight opposite house #14 has been non-functional for 3 days, making the area unsafe at night.",
+    "category_code": "STREETLIGHT",
+    "latitude": 18.5089,
+    "longitude": 73.8807,
+    "district_code": "CD",
+    "address": "Lane 14, Model Colony",
+    "severity": "Low",
+    "status": "Reported"
+  },
+  {
+    "title": "Water pipeline burst near school",
+    "description": "Burst water pipeline flooding the road outside ABC School. Children cannot cross safely.",
+    "category_code": "WATER",
+    "latitude": 18.5104,
+    "longitude": 73.9217,
+    "district_code": "ED",
+    "address": "Outside ABC School, Kharadi",
+    "severity": "Critical",
+    "status": "In Progress"
+  },
+  {
+    "title": "Traffic signal flickering",
+    "description": "Traffic signal at Bose Chowk intersection flickers intermittently, causing confusion among drivers.",
+    "category_code": "TRAFFIC",
+    "latitude": 18.4604,
+    "longitude": 73.8667,
+    "district_code": "SD",
+    "address": "Bose Chowk intersection",
+    "severity": "Moderate",
+    "status": "Verified"
+  },
+  {
+    "title": "Drainage cover missing",
+    "description": "Drainage cover is missing on the corner of FC Road and JM Road. Hazardous for pedestrians.",
+    "category_code": "DRAINAGE",
+    "latitude": 18.5304,
+    "longitude": 73.8467,
+    "district_code": "CD",
+    "address": "FC Road / JM Road corner",
+    "severity": "High",
+    "status": "Reported"
+  },
+  {
+    "title": "Public school compound wall crumbling",
+    "description": "Section of compound wall of Government Primary School has crumbled after recent rains.",
+    "category_code": "BUILDING",
+    "latitude": 18.5404,
+    "longitude": 73.7867,
+    "district_code": "WD",
+    "address": "Government Primary School, Ward 12",
+    "severity": "High",
+    "status": "Assigned"
+  },
+  {
+    "title": "Fallen tree branch on park bench",
+    "description": "A large branch has fallen on a park bench in Saras Baug, rendering it unusable.",
+    "category_code": "PARK",
+    "latitude": 18.4904,
+    "longitude": 73.8467,
+    "district_code": "SD",
+    "address": "Saras Baug park",
+    "severity": "Low",
+    "status": "Resolved"
+  },
+  {
+    "title": "Damaged footpath with exposed wires",
+    "description": "Footpath tiles are broken and electrical wires are exposed near Bus Stop #7. Risky for pedestrians.",
+    "category_code": "FOOTPATH",
+    "latitude": 18.5604,
+    "longitude": 73.9067,
+    "district_code": "ED",
+    "address": "Bus Stop #7, Vishrantwadi",
+    "severity": "Moderate",
+    "status": "Verified"
+  },
+  {
+    "title": "Public toilet overflowing",
+    "description": "Public toilet near Market Yard is overflowing due to blocked sewage. Severe sanitation risk.",
+    "category_code": "TOILET",
+    "latitude": 18.4704,
+    "longitude": 73.8367,
+    "district_code": "SD",
+    "address": "Market Yard public toilet",
+    "severity": "Moderate",
+    "status": "Reported"
+  }
+]

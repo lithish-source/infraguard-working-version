@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+*.db
+*.sqlite
+*.sqlite3
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/dist/
+frontend/.vite/
+
+# Environment
+.env
+.env.local
+.env.*.local
+backend/.env
+docker/.env
+
+# Uploads (runtime data)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# AI model artifacts
+ai/data/dataset.npz
+ai/data/sample_images/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+test_infraguard.db
+test_uploads/
+
+# Logs
+*.log
+logs/
+
+# Build
+*.spec
+
+# Java
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+.classpath
+.project
+.settings/
+.metadata/

@@ -1,0 +1,91 @@
+# ============================================================
+# InfraGuard Backend — Spring Boot Configuration
+# ============================================================
+
+server:
+  port: 8000
+  address: 0.0.0.0
+
+spring:
+  application:
+    name: infraguard-backend
+
+  # Database (PostgreSQL + PostGIS)
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/infraguard}
+    username: ${POSTGRES_USER:infraguard}
+    password: ${POSTGRES_PASSWORD:infraguard}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      pool-name: InfraGuardPool
+
+  jpa:
+    hibernate:
+      ddl-auto: update  # dev mode — use 'validate' or 'none' in prod
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 60MB
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+# CORS
+app:
+  cors:
+    allowed-origins: ${BACKEND_CORS_ORIGINS:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}
+
+  # JWT
+  jwt:
+    secret: ${JWT_SECRET_KEY:change_this_to_a_long_random_string_in_production_5f8a2b9c1e7d}
+    access-token-expiration-minutes: 1440  # 24h
+    refresh-token-expiration-days: 7
+
+  # File uploads
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
+    max-size-mb: 10
+    allowed-types: image/jpeg,image/png,image/webp
+
+  # AI / LLM (Llama 4 Scout via Groq by default)
+  llm:
+    api-key: ${LLM_API_KEY:}
+    api-base-url: ${LLM_API_BASE_URL:https://api.groq.com/openai/v1}
+    vision-model: ${LLM_VISION_MODEL:meta-llama/llama-4-scout-17b-16e-instruct}
+    request-timeout-seconds: 30
+
+  # Geospatial (Overpass — free, no key required)
+  overpass:
+    enabled: true
+    timeout-seconds: 10
+    endpoints:
+      - https://overpass-api.de/api/interpreter
+      - https://overpass.kumi.systems/api/interpreter
+      - https://overpass.private.coffee/api/interpreter
+
+  # Default admin (seeded on startup)
+  default-admin:
+    email: ${DEFAULT_ADMIN_EMAIL:admin@infraguard.gov}
+    password: ${DEFAULT_ADMIN_PASSWORD:Admin@12345}
+    name: ${DEFAULT_ADMIN_NAME:System Administrator}
+
+# Logging
+logging:
+  level:
+    com.infraguard: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
