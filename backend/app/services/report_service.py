@@ -225,7 +225,7 @@ async def create_report(
         address=payload.address,
         latitude=payload.latitude,
         longitude=payload.longitude,
-        geom=f"SRID=4326;POINT({payload.longitude} {payload.latitude})",
+        geom=f"{payload.longitude},{payload.latitude}",
         status=STATUS_REPORTED,
         credibility_score=1.0,
         final_severity=None,

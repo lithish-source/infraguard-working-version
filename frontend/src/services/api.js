@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api/v1';
+// On Vercel, use the env var; locally, use the Vite proxy
+const API_BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api/v1`
+  : '/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

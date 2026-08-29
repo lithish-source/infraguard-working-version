@@ -1,4 +1,4 @@
-"""Geospatial helpers using Shapely (PostGIS-independent fallback)."""
+"""Geospatial helpers (PostGIS-independent)."""
 from __future__ import annotations
 
 import math
@@ -16,5 +16,5 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 
 def make_point_wkt(lat: float, lon: float) -> str:
-    """Return EWKT string for a point."""
-    return f"SRID=4326;POINT({lon} {lat})"
+    """Return simple coordinate string for a point."""
+    return f"{lon},{lat}"

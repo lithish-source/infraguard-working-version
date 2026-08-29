@@ -27,9 +27,9 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # Database
+    # Database (SQLite by default for Vercel / local deployment)
     DATABASE_URL: str = (
-        "postgresql+psycopg2://infraguard:infraguard@localhost:5432/infraguard"
+        "sqlite:///./infraguard.db"
     )
     POSTGRES_USER: str = "infraguard"
     POSTGRES_PASSWORD: str = "infraguard"

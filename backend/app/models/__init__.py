@@ -7,7 +7,6 @@ Tables:
 from datetime import datetime
 from typing import Optional
 
-from geoalchemy2 import Geometry
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -79,8 +78,8 @@ class District(Base, TimestampMixin):
     state = Column(String(100), nullable=True)
     population = Column(Integer, nullable=True)
     area_sq_km = Column(Float, nullable=True)
-    geom = Column(Geometry("POLYGON", srid=4326), nullable=True)
-    centroid = Column(Geometry("POINT", srid=4326), nullable=True)
+    geom = Column(Text, nullable=True)
+    centroid = Column(Text, nullable=True)
 
 
 class InfrastructureType(Base, TimestampMixin):
@@ -115,7 +114,7 @@ class Report(Base, TimestampMixin):
 
     latitude = Column(Float, nullable=False, index=True)
     longitude = Column(Float, nullable=False, index=True)
-    geom = Column(Geometry("POINT", srid=4326), nullable=True, index=True)
+    geom = Column(Text, nullable=True, index=True)
 
     # AI-derived
     ai_severity = Column(String(20), nullable=True, index=True)

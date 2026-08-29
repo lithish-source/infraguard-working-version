@@ -17,30 +17,6 @@ os.environ.setdefault("JWT_SECRET_KEY", "test_secret_for_pytest")
 os.environ.setdefault("UPLOAD_DIR", "./test_uploads")
 os.environ.setdefault("DEBUG", "true")
 
-# Patch geoalchemy2 for SQLite tests
-import sys as _sys
-import sqlalchemy as _sa
-from sqlalchemy.types import TypeDecorator
-
-
-class _DummyGeom(TypeDecorator):
-    impl = _sa.Text
-    cache_ok = True
-
-    def __init__(self, *args, **kwargs):
-        # Accept and discard geometry_type, srid, etc.
-        super().__init__()
-
-
-if "geoalchemy2" in _sys.modules:
-    import geoalchemy2 as _gad
-    _gad.Geometry = _DummyGeom
-else:
-    class _FakeGA:
-        Geometry = _DummyGeom
-    _sys.modules["geoalchemy2"] = _FakeGA()
-
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

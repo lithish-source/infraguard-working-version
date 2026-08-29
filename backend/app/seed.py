@@ -75,7 +75,7 @@ def _seed_districts(db) -> None:
         db.add(District(
             name=name, code=code, state=state,
             population=pop, area_sq_km=area,
-            centroid=f"SRID=4326;POINT({lng} {lat})",
+            centroid=f"{lng},{lat}",
         ))
     db.commit()
 
@@ -231,7 +231,7 @@ def _seed_demo_reports(db, citizens: List[User], n: int = 60) -> None:
             address=f"Near {district.name} center, {district.state}",
             latitude=lat,
             longitude=lng,
-            geom=f"SRID=4326;POINT({lng} {lat})",
+            geom=f"{lng},{lat}",
             ai_severity=sev,
             ai_confidence=round(random.uniform(0.62, 0.94), 3),
             ai_damage_type=random.choice([
