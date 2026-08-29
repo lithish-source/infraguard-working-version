@@ -13,7 +13,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 # Ensure the parent directory (project root) is importable so `from ai import ...` works
@@ -91,11 +91,6 @@ app.include_router(admin.router, prefix=settings.API_V1_PREFIX)
 app.include_router(notifications.router, prefix=settings.API_V1_PREFIX)
 
 
-@app.get("/", include_in_schema=False)
-def root():
-    return {"app": settings.APP_NAME, "version": settings.APP_VERSION, "status": "ok"}
-
-
 @app.get("/health", tags=["health"])
 @app.get(f"{settings.API_V1_PREFIX}/health", tags=["health"])
 def health():
@@ -106,6 +101,33 @@ def health():
         "llm": get_llm_status(),
         "geospatial": {"overpass_enabled": True},
     }
+
+
+# Serve built React frontend if available
+_FRONTEND_DIST = os.environ.get("FRONTEND_DIST", "/app/frontend_dist")
+if not os.path.isdir(_FRONTEND_DIST):
+    _LOCAL_DIST = os.path.join(str(_PROJECT_ROOT), "frontend", "dist")
+    if os.path.isdir(_LOCAL_DIST):
+        _FRONTEND_DIST = _LOCAL_DIST
+
+if os.path.isdir(_FRONTEND_DIST):
+    print(f"[main] Serving frontend SPA from {_FRONTEND_DIST}")
+    _assets_dir = os.path.join(_FRONTEND_DIST, "assets")
+    if os.path.isdir(_assets_dir):
+        app.mount("/assets", StaticFiles(directory=_assets_dir), name="static-assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str = ""):
+        if full_path.startswith("api/") or full_path.startswith("uploads/"):
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
+        target = os.path.join(_FRONTEND_DIST, full_path)
+        if full_path and os.path.isfile(target):
+            return FileResponse(target)
+        return FileResponse(os.path.join(_FRONTEND_DIST, "index.html"))
+else:
+    @app.get("/", include_in_schema=False)
+    def root():
+        return {"app": settings.APP_NAME, "version": settings.APP_VERSION, "status": "ok"}
 
 
 @app.exception_handler(Exception)
