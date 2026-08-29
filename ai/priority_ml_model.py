@@ -47,14 +47,25 @@ class PriorityMLModel:
         self._load()
 
     def _load(self):
+        loaded = False
         if self.model_path and os.path.exists(self.model_path):
             try:
                 bundle = joblib.load(self.model_path)
                 self.model = bundle["model"]
                 self.scaler = bundle.get("scaler")
                 print(f"[priority_ml] Loaded ML priority model from {self.model_path}")
+                loaded = True
             except Exception as e:
-                print(f"[priority_ml] Failed to load ML model: {e}")
+                print(f"[priority_ml] Pickle version mismatch, auto-retraining model: {e}")
+                loaded = False
+
+        if not loaded:
+            try:
+                from ai.train import train_priority_model
+                self.model, self.scaler = train_priority_model(save_path=self.model_path)
+                print(f"[priority_ml] Freshly trained and loaded ML priority model")
+            except Exception as e2:
+                print(f"[priority_ml] Auto-training fallback error: {e2}")
                 self.model = None
 
     @property

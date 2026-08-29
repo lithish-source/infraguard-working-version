@@ -104,15 +104,22 @@ class SeverityAnalyzer:
         self.use_ml = use_ml
         self.clf = None
         self.scaler = None
-        if use_ml and model_path and os.path.exists(model_path):
-            try:
-                bundle = joblib.load(model_path)
-                self.clf = bundle.get("model")
-                self.scaler = bundle.get("scaler")
-            except Exception as e:
-                print(f"[ai] Warning: could not load ML model: {e}")
-                self.clf = None
-                self.scaler = None
+        if use_ml:
+            if model_path and os.path.exists(model_path):
+                try:
+                    bundle = joblib.load(model_path)
+                    self.clf = bundle.get("model")
+                    self.scaler = bundle.get("scaler")
+                except Exception as e:
+                    print(f"[ai] Pickle mismatch, auto-training severity classifier: {e}")
+                    self.clf = None
+            if self.clf is None:
+                try:
+                    from ai.train import train_severity_model
+                    self.clf, self.scaler = train_severity_model(save_path=model_path)
+                    print(f"[ai] Freshly trained and loaded severity classifier model")
+                except Exception as e2:
+                    print(f"[ai] Auto-training fallback error: {e2}")
 
         # YOLO road damage detector
         self.yolo = None

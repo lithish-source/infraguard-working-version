@@ -80,5 +80,11 @@ def train(
     }
 
 
+def train_severity_model(save_path: str = None):
+    res = train(output_path=save_path)
+    bundle = joblib.load(res["model_path"])
+    return bundle["model"], bundle["scaler"]
+
+
 if __name__ == "__main__":
     train()
