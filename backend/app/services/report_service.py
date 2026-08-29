@@ -259,19 +259,39 @@ async def create_report(
         db.add(image_obj)
         if idx == 0:
             saved_image_path = file_path
-
     db.flush()
 
-    # Initial priority score (instant baseline — fully recomputed with Overpass in background)
+    # Run immediate AI analysis on uploaded image
+    if saved_image_path is not None and ai_analyzer is not None:
+        try:
+            ai_res = ai_analyzer.analyze_image(saved_image_path)
+            if ai_res:
+                report.ai_severity = ai_res.get("severity", "Moderate")
+                report.ai_confidence = ai_res.get("confidence", 0.85)
+                report.ai_damage_type = ai_res.get("damage_type", "Pothole")
+                ai_features_persist = {
+                    "features": ai_res.get("features", {}),
+                    "rule_based_severity": ai_res.get("rule_based_severity"),
+                    "ml_severity": ai_res.get("ml_severity"),
+                    "ml_confidence": ai_res.get("ml_confidence"),
+                    "yolo_severity_shift": ai_res.get("yolo_severity_shift"),
+                    "yolo_damage_types": ai_res.get("yolo_damage_types"),
+                    "yolo_detection_count": ai_res.get("yolo_detection_count"),
+                }
+                report.ai_features = json.dumps(ai_features_persist)
+        except Exception as e:
+            print(f"[reports] Synchronous AI analysis error: {e}")
+
+    # Compute immediate priority score with the detected severity
     from app.services.priority_service import compute_and_save_priority
-    compute_and_save_priority(db, report, ai_analyzer_used=False, skip_overpass=True)
+    compute_and_save_priority(db, report, ai_analyzer_used=(report.ai_severity is not None), skip_overpass=True)
 
     # Notify user
     db.add(Notification(
         user_id=user.id,
         report_id=report.id,
         title="Report submitted",
-        message=f"Your report {report.reference_code} has been received and is being analyzed.",
+        message=f"Your report {report.reference_code} has been received and analyzed (Severity: {report.ai_severity or 'Moderate'}).",
         type="success",
     ))
 
