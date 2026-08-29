@@ -75,8 +75,9 @@ def _hospital_proximity_booster(distance_km: Optional[float], max_boost: float) 
 
 def _school_proximity_booster(distance_km: Optional[float], max_boost: float) -> float:
     if distance_km is None:
-        return max_boost * 0.3
-    ratio = max(0.0, 1.0 - (distance_km / 3.0))
+        return max_boost * 0.4
+    # 0 km → full boost, 5 km → zero boost (consistent with hospital decay)
+    ratio = max(0.0, 1.0 - (distance_km / 5.0))
     return max_boost * ratio
 
 

@@ -106,14 +106,11 @@ def _query_geomap_api(lat: float, lng: float, categories: str, radius_m: int, ap
 
 @lru_cache(maxsize=4096)
 def get_nearby_hospitals(lat: float, lng: float, radius_m: int = 5000) -> List[Dict]:
-    """Query for hospitals and clinics within `radius_m` of (lat, lng).
-    
-    Uses OpenGeoMap API if key configured, otherwise queries global OpenStreetMap Overpass.
-    """
+    """Query for hospitals, clinics, and emergency medical facilities within `radius_m` of (lat, lng)."""
     from app.core.config import settings
     api_key = settings.OPENGEOMAP_API_KEY or settings.GEOAPIFY_API_KEY
     if api_key:
-        geo_res = _query_geomap_api(lat, lng, "healthcare.hospital,healthcare.clinic", radius_m, api_key)
+        geo_res = _query_geomap_api(lat, lng, "healthcare.hospital,healthcare.clinic,healthcare.emergency", radius_m, api_key)
         if geo_res:
             return geo_res
 
@@ -125,8 +122,10 @@ def get_nearby_hospitals(lat: float, lng: float, radius_m: int = 5000) -> List[D
       way["amenity"="hospital"](around:{radius_m},{lat_r},{lng_r});
       node["amenity"="clinic"](around:{radius_m},{lat_r},{lng_r});
       way["amenity"="clinic"](around:{radius_m},{lat_r},{lng_r});
+      node["amenity"="doctors"](around:{radius_m},{lat_r},{lng_r});
+      way["healthcare"="hospital"](around:{radius_m},{lat_r},{lng_r});
     );
-    out center 10;
+    out center 15;
     """
     try:
         result = _run_overpass_query(query)
@@ -144,7 +143,7 @@ def get_nearby_hospitals(lat: float, lng: float, radius_m: int = 5000) -> List[D
         else:
             continue
         tags = el.get("tags", {})
-        name = tags.get("name", tags.get("amenity", "Unnamed facility"))
+        name = tags.get("name", tags.get("amenity", "Medical Facility"))
         dist = _haversine_km(lat_r, lng_r, elat, elng)
         hospitals.append({"name": name, "lat": elat, "lng": elng, "distance_km": round(dist, 3)})
 
@@ -153,12 +152,12 @@ def get_nearby_hospitals(lat: float, lng: float, radius_m: int = 5000) -> List[D
 
 
 @lru_cache(maxsize=4096)
-def get_nearby_schools(lat: float, lng: float, radius_m: int = 3000) -> List[Dict]:
-    """Query for schools, colleges, and educational facilities within `radius_m` of (lat, lng)."""
+def get_nearby_schools(lat: float, lng: float, radius_m: int = 5000) -> List[Dict]:
+    """Query for schools, colleges, kindergartens, and educational institutions within `radius_m` of (lat, lng)."""
     from app.core.config import settings
     api_key = settings.OPENGEOMAP_API_KEY or settings.GEOAPIFY_API_KEY
     if api_key:
-        geo_res = _query_geomap_api(lat, lng, "education.school,education.college,education.university", radius_m, api_key)
+        geo_res = _query_geomap_api(lat, lng, "education.school,education.college,education.university,education.kindergarten", radius_m, api_key)
         if geo_res:
             return geo_res
 
@@ -168,6 +167,8 @@ def get_nearby_schools(lat: float, lng: float, radius_m: int = 3000) -> List[Dic
     (
       node["amenity"="school"](around:{radius_m},{lat_r},{lng_r});
       way["amenity"="school"](around:{radius_m},{lat_r},{lng_r});
+      node["building"="school"](around:{radius_m},{lat_r},{lng_r});
+      way["building"="school"](around:{radius_m},{lat_r},{lng_r});
       node["amenity"="kindergarten"](around:{radius_m},{lat_r},{lng_r});
       way["amenity"="kindergarten"](around:{radius_m},{lat_r},{lng_r});
       node["amenity"="college"](around:{radius_m},{lat_r},{lng_r});
@@ -175,7 +176,7 @@ def get_nearby_schools(lat: float, lng: float, radius_m: int = 3000) -> List[Dic
       node["amenity"="university"](around:{radius_m},{lat_r},{lng_r});
       way["amenity"="university"](around:{radius_m},{lat_r},{lng_r});
     );
-    out center 10;
+    out center 15;
     """
     try:
         result = _run_overpass_query(query)
@@ -193,7 +194,7 @@ def get_nearby_schools(lat: float, lng: float, radius_m: int = 3000) -> List[Dic
         else:
             continue
         tags = el.get("tags", {})
-        name = tags.get("name", tags.get("amenity", "Unnamed school"))
+        name = tags.get("name", tags.get("amenity", "Educational Facility"))
         dist = _haversine_km(lat_r, lng_r, elat, elng)
         schools.append({"name": name, "lat": elat, "lng": elng, "distance_km": round(dist, 3)})
 
