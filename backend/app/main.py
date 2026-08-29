@@ -35,17 +35,15 @@ def _init_db():
 
 
 def _ensure_ai_model():
-    """Train models on first run if model files do not exist."""
+    """Train models on first run if model files do not exist or have pickle mismatch."""
     model_path = settings.AI_MODEL_PATH
     priority_model_path = settings.PRIORITY_ML_MODEL_PATH
-    if not os.path.exists(model_path) or not os.path.exists(priority_model_path):
-        try:
-            print("[main] Training default AI severity and priority ML models...")
-            from ai.train import train
-            train(n_per_class=200)
-            print("[main] Default AI and Priority ML models trained.")
-        except Exception as e:
-            print(f"[main] Could not train default AI models: {e}")
+    try:
+        from ai.train import train
+        train(n_per_class=200)
+        print("[main] AI Severity and Priority ML models initialized natively on startup.")
+    except Exception as e:
+        print(f"[main] Model init: {e}")
 
 
 @asynccontextmanager
@@ -73,18 +71,17 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_origin_regex=".*",
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Static files for uploaded images
+# Mount upload directory
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
-# Routers
+# Include API routers
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(reports.router, prefix=settings.API_V1_PREFIX)
 app.include_router(reference.router, prefix=settings.API_V1_PREFIX)
@@ -92,8 +89,8 @@ app.include_router(admin.router, prefix=settings.API_V1_PREFIX)
 app.include_router(notifications.router, prefix=settings.API_V1_PREFIX)
 
 
-@app.get("/health", tags=["health"])
-@app.get(f"{settings.API_V1_PREFIX}/health", tags=["health"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["system"])
+@app.api_route(f"{settings.API_V1_PREFIX}/health", methods=["GET", "HEAD"], tags=["system"])
 def health():
     from app.services.llm_service import get_llm_status
     return {
@@ -117,7 +114,7 @@ if os.path.isdir(_FRONTEND_DIST):
     if os.path.isdir(_assets_dir):
         app.mount("/assets", StaticFiles(directory=_assets_dir), name="static-assets")
 
-    @app.get("/{full_path:path}", include_in_schema=False)
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(full_path: str = ""):
         if full_path.startswith("api/") or full_path.startswith("uploads/"):
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
@@ -126,7 +123,7 @@ if os.path.isdir(_FRONTEND_DIST):
             return FileResponse(target)
         return FileResponse(os.path.join(_FRONTEND_DIST, "index.html"))
 else:
-    @app.get("/", include_in_schema=False)
+    @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
     def root():
         return {"app": settings.APP_NAME, "version": settings.APP_VERSION, "status": "ok"}
 
