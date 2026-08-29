@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// On Vercel, use the env var; locally, use the Vite proxy
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/v1`
+// Hardcoded backend URL for production; falls back to local proxy in dev
+const API_BASE_URL = import.meta.env.PROD
+  ? 'https://infraguard-backend-sz6b.onrender.com/api/v1'
   : '/api/v1';
 
 const api = axios.create({
