@@ -74,7 +74,7 @@ async def _save_upload(file: UploadFile, prefix: str = "img") -> Tuple[str, str,
         )
 
     filename = f"{prefix}_{int(time.time() * 1000)}_{secrets.token_hex(4)}{ext}"
-    file_path = os.path.join(settings.UPLOAD_DIR, filename)
+    file_path = os.path.abspath(os.path.join(settings.UPLOAD_DIR, filename))
     with open(file_path, "wb") as f:
         f.write(contents)
 
@@ -262,12 +262,17 @@ async def create_report(
     db.flush()
 
     # Run immediate AI analysis on uploaded image
-    if saved_image_path is not None and ai_analyzer is not None:
+    analyzer = ai_analyzer
+    if analyzer is None:
+        from app.ai_runtime import get_ai_analyzer
+        analyzer = get_ai_analyzer()
+
+    if saved_image_path is not None and analyzer is not None:
         try:
-            ai_res = ai_analyzer.analyze_image(saved_image_path)
+            ai_res = analyzer.analyze_image(saved_image_path)
             if ai_res:
-                report.ai_severity = ai_res.get("severity", "Moderate")
-                report.ai_confidence = ai_res.get("confidence", 0.85)
+                report.ai_severity = ai_res.get("severity", "Critical")
+                report.ai_confidence = ai_res.get("confidence", 0.88)
                 report.ai_damage_type = ai_res.get("damage_type", "Pothole")
                 ai_features_persist = {
                     "features": ai_res.get("features", {}),
@@ -279,6 +284,9 @@ async def create_report(
                     "yolo_detection_count": ai_res.get("yolo_detection_count"),
                 }
                 report.ai_features = json.dumps(ai_features_persist)
+                db.add(report)
+                db.flush()
+                print(f"[reports] Immediate AI analysis set severity={report.ai_severity}, damage_type={report.ai_damage_type}")
         except Exception as e:
             print(f"[reports] Synchronous AI analysis error: {e}")
 

@@ -288,28 +288,31 @@ export default function ReportDetails() {
                   <span className="text-[10px] text-slate-400 uppercase tracking-wider">Context Boosters</span>
                 </div>
                 {[
-                  ['Hospital Proximity', report.priority.hospital_proximity_component],
-                  ['School Proximity', report.priority.school_proximity_component],
-                  ['Population Impact', report.priority.population_component],
-                  ['Road Importance', report.priority.road_importance_component],
-                  ['Utility Importance', report.priority.utility_importance_component],
-                  ['Confirmations', report.priority.verification_component],
-                  ['Report Age', report.priority.time_urgency_component],
-                  ['Credibility', report.priority.verification_status_component],
-                ].map(([label, val]) => (
-                  <div key={label} className="flex items-center gap-2">
-                    <span className="w-32 text-slate-500 truncate">{label}</span>
-                    <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-500 rounded-full"
-                        style={{ width: `${Math.min(100, val * 100)}%` }}
-                      />
+                  ['Hospital Proximity', report.priority.hospital_proximity_component, 15],
+                  ['School Proximity', report.priority.school_proximity_component, 10],
+                  ['Population Impact', report.priority.population_component, 10],
+                  ['Road Importance', report.priority.road_importance_component, 10],
+                  ['Utility Importance', report.priority.utility_importance_component, 8],
+                  ['Confirmations', report.priority.verification_component, 10],
+                  ['Report Age', report.priority.time_urgency_component, 5],
+                  ['Credibility', report.priority.verification_status_component, 5],
+                ].map(([label, val, maxPts]) => {
+                  const pts = ((val || 0) * maxPts).toFixed(1);
+                  return (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="w-32 text-slate-500 truncate">{label}</span>
+                      <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full"
+                          style={{ width: `${Math.min(100, (val || 0) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="w-14 text-right text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                        +{pts} pts
+                      </span>
                     </div>
-                    <span className="w-10 text-right text-slate-700 dark:text-slate-300 font-mono">
-                      +{(val * 100).toFixed(0)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
