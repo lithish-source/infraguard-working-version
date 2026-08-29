@@ -47,12 +47,8 @@ def _round_coord(value: float, decimals: int = 3) -> float:
     return round(value, decimals)
 
 
-def _run_overpass_query(query: str, timeout: float = 15.0, retries: int = 2) -> dict:
-    """Execute an Overpass QL query, trying multiple endpoints with retry.
-
-    Each endpoint is tried once; on 429 (rate limit) we back off and retry
-    the same endpoint up to ``retries`` times before moving to the next.
-    """
+def _run_overpass_query(query: str, timeout: float = 6.0, retries: int = 1) -> dict:
+    """Execute an Overpass QL query, trying multiple endpoints with fast failover."""
     payload = {"data": query}
     last_error = None
     for attempt in range(retries + 1):
@@ -63,9 +59,7 @@ def _run_overpass_query(query: str, timeout: float = 15.0, retries: int = 2) -> 
                     if resp.status_code == 200:
                         return resp.json()
                     elif resp.status_code == 429:
-                        # Rate-limited — back off and retry
-                        wait = 2 ** (attempt + 1)  # 2s, 4s
-                        print(f"[geospatial] Rate limited at {endpoint}, retrying in {wait}s...")
+                        wait = 1.5 * (attempt + 1)
                         time.sleep(wait)
                         last_error = f"Rate limited at {endpoint}"
                         continue
@@ -74,10 +68,8 @@ def _run_overpass_query(query: str, timeout: float = 15.0, retries: int = 2) -> 
             except Exception as e:
                 last_error = f"{endpoint}: {e}"
                 continue
-        # Brief pause between full rounds through endpoints
-        if attempt < retries:
-            time.sleep(1)
-    raise RuntimeError(f"All Overpass endpoints failed. Last error: {last_error}")
+    print(f"[geospatial] Overpass queries timed out or failed: {last_error}")
+    return {"elements": []}
 
 
 def _query_geomap_api(lat: float, lng: float, categories: str, radius_m: int, api_key: str) -> List[Dict]:
