@@ -61,8 +61,9 @@ class PriorityMLModel:
 
         if not loaded:
             try:
-                from ai.train import train_priority_model
-                self.model, self.scaler = train_priority_model(save_path=self.model_path)
+                bundle = train_priority_model(output_path=self.model_path)
+                self.model = bundle["model"]
+                self.scaler = bundle.get("scaler")
                 print(f"[priority_ml] Freshly trained and loaded ML priority model")
             except Exception as e2:
                 print(f"[priority_ml] Auto-training fallback error: {e2}")

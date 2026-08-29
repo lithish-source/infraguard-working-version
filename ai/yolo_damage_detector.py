@@ -62,13 +62,33 @@ class YOLODamageDetector:
 
         if model_path and os.path.exists(model_path):
             try:
+                import torch
+                try:
+                    import ultralytics.nn.tasks
+                    torch.serialization.add_safe_globals([ultralytics.nn.tasks.DetectionModel])
+                except Exception:
+                    pass
                 from ultralytics import YOLO
                 self.model = YOLO(model_path)
                 self._available = True
                 print(f"[yolo] Road damage detector loaded from {model_path}")
             except Exception as e:
-                print(f"[yolo] Failed to load model: {e}")
-                self.model = None
+                # If PyTorch 2.6 weights_only blocks unpickling, bypass with safe weights_only=False
+                try:
+                    import torch
+                    _orig_load = torch.load
+                    def _safe_load(*args, **kwargs):
+                        kwargs["weights_only"] = False
+                        return _orig_load(*args, **kwargs)
+                    torch.load = _safe_load
+                    from ultralytics import YOLO
+                    self.model = YOLO(model_path)
+                    torch.load = _orig_load
+                    self._available = True
+                    print(f"[yolo] Road damage detector loaded with safe loader from {model_path}")
+                except Exception as e2:
+                    print(f"[yolo] Failed to load model: {e2}")
+                    self.model = None
 
     @property
     def is_available(self) -> bool:

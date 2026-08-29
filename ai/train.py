@@ -86,5 +86,10 @@ def train_severity_model(save_path: str = None):
     return bundle["model"], bundle["scaler"]
 
 
+def train_priority_model(*args, **kwargs):
+    from ai.priority_ml_model import train_priority_model as _tpm
+    return _tpm(*args, **kwargs)
+
+
 if __name__ == "__main__":
     train()
