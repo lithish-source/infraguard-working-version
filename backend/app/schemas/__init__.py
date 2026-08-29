@@ -1,6 +1,6 @@
 """Pydantic v2 schemas (request/response models)."""
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -142,7 +142,7 @@ class ReportOut(BaseModel):
     images: List[ImageOut] = []
     priority: Optional[PriorityScoreOut] = None
     verifications: List[VerificationOut] = []
-    nearby_facilities: Optional[List[Dict]] = []
+    nearby_facilities: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
 
 
 class ReportListItem(BaseModel):
