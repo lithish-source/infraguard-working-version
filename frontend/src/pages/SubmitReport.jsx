@@ -70,7 +70,54 @@ export default function SubmitReport() {
     );
   };
 
-  const handleFileChange = (e) => {
+  const compressImage = (file, maxWidth = 1280, maxHeight = 1280, quality = 0.85) => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) return resolve(file);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+      };
+      reader.onerror = () => resolve(file);
+    });
+  };
+
+  const handleFileChange = async (e) => {
     const files = Array.from(e.target.files || []);
     const valid = files.filter((f) => f.type.startsWith('image/'));
     if (valid.length !== files.length) {
@@ -80,7 +127,10 @@ export default function SubmitReport() {
       toast.error('Max 5 images per report.');
       valid.splice(5);
     }
-    setImages(valid);
+    
+    // Auto-compress for instant upload
+    const compressed = await Promise.all(valid.map((f) => compressImage(f)));
+    setImages(compressed);
   };
 
   const validate = () => {

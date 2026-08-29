@@ -27,16 +27,16 @@ export default function ReportDetails() {
   const [verifImage, setVerifImage] = useState(null);
   const [verifying, setVerifying] = useState(false);
 
-  const fetchReport = async () => {
-    setLoading(true);
+  const fetchReport = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const data = await reportService.get(id);
       setReport(data);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Report not found.');
+      if (!isBackground) setError(err.response?.data?.detail || 'Report not found.');
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
@@ -44,6 +44,16 @@ export default function ReportDetails() {
     fetchReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Auto-refresh when AI analysis is still pending
+  useEffect(() => {
+    if (report && (!report.ai_severity || report.ai_severity === 'Unassessed')) {
+      const timer = setTimeout(() => {
+        fetchReport(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [report, id]);
 
   const handleVerify = async (e) => {
     e.preventDefault();
