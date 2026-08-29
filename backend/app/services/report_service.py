@@ -185,7 +185,12 @@ def _run_ai_background(
         }
         report.ai_features = _json.dumps(ai_features_persist)
         db.commit()
-        print(f"[reports] Background AI analysis done for report #{report_id}: severity={report.ai_severity}")
+
+        # Recompute priority score with the fresh AI severity and geospatial context
+        from app.services.priority_service import compute_and_save_priority
+        compute_and_save_priority(db, report, ai_analyzer_used=True)
+        db.commit()
+        print(f"[reports] Background AI analysis and priority scoring completed for report #{report_id}: severity={report.ai_severity}")
     except Exception as e:
         print(f"[reports] Background AI analysis failed for report #{report_id}: {e}")
         db.rollback()
