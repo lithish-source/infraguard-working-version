@@ -103,6 +103,15 @@ def heatmap_data(
     return {"points": heatmap_points(db, severity=severity)}
 
 
+@router.get("/me", response_model=List[ReportOut])
+@router.get("/me/my-reports", response_model=List[ReportOut])
+def my_reports(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    return report_service.my_reports(db, user.id)
+
+
 @router.get("/{report_id}", response_model=ReportOut)
 def get_report(report_id: int, db: Session = Depends(get_db)):
     return report_service.get_report(db, report_id)
@@ -122,11 +131,3 @@ async def add_verification(
         severity_vote=severity_vote, comment=comment, is_confirmed=is_confirmed,
     )
     return report_service.add_verification(db, report_id, user, payload, image)
-
-
-@router.get("/me/my-reports", response_model=List[ReportOut])
-def my_reports(
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    return report_service.my_reports(db, user.id)

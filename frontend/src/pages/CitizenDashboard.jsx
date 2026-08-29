@@ -20,18 +20,24 @@ export default function CitizenDashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const [mine, recent, types, dist] = await Promise.all([
+        const [mineRes, recentRes, typesRes, distRes] = await Promise.allSettled([
           reportService.myReports(),
           reportService.list({ page: 1, page_size: 5, order_by: 'created_at_desc' }),
           referenceService.infrastructureTypes(),
           referenceService.districts(),
         ]);
+
+        const mine = mineRes.status === 'fulfilled' && Array.isArray(mineRes.value) ? mineRes.value : [];
+        const recent = recentRes.status === 'fulfilled' ? recentRes.value?.items || [] : [];
+        const types = typesRes.status === 'fulfilled' && Array.isArray(typesRes.value) ? typesRes.value : [];
+        const dist = distRes.status === 'fulfilled' && Array.isArray(distRes.value) ? distRes.value : [];
+
         setMyReports(mine);
-        setRecentReports(recent.items || []);
+        setRecentReports(recent);
         setInfraTypes(types);
         setDistricts(dist);
       } catch (err) {
-        setError(err.response?.data?.detail || 'Failed to load dashboard.');
+        console.warn('Dashboard load warning:', err);
       } finally {
         setLoading(false);
       }
@@ -39,7 +45,6 @@ export default function CitizenDashboard() {
   }, []);
 
   if (loading) return <Layout><Loading size="lg" label="Loading dashboard..." /></Layout>;
-  if (error) return <Layout><ErrorState message={error} onRetry={() => window.location.reload()} /></Layout>;
 
   const stats = {
     submitted: myReports.length,
