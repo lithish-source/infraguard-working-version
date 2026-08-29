@@ -327,6 +327,34 @@ export default function ReportDetails() {
             </div>
           )}
 
+          {/* Nearby Critical Facilities */}
+          {report.nearby_facilities && report.nearby_facilities.length > 0 && (
+            <div className="card p-5">
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+                📍 Nearby Critical Facilities
+              </h3>
+              <p className="text-xs text-slate-500 mb-3">Live proximity from OpenStreetMap</p>
+              <div className="space-y-2">
+                {report.nearby_facilities.map((fac, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 text-xs">
+                    <div className="flex items-center gap-2.5 truncate">
+                      <span className="text-base p-1 rounded-md bg-white dark:bg-slate-700 shadow-xs">
+                        {fac.type === 'Hospital' ? '🏥' : '🏫'}
+                      </span>
+                      <div className="truncate">
+                        <p className="font-medium text-slate-800 dark:text-slate-200 truncate">{fac.name}</p>
+                        <p className="text-[10px] text-slate-400">{fac.type}</p>
+                      </div>
+                    </div>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold shrink-0 ml-2 text-xs bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                      {fac.distance_km < 1 ? `${Math.round(fac.distance_km * 1000)}m` : `${fac.distance_km.toFixed(2)}km`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Crowd validation form */}
           {!isOwner && !alreadyVerified && report.status !== 'Resolved' && (
             <div className="card p-5">

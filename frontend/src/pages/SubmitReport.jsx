@@ -53,13 +53,29 @@ export default function SubmitReport() {
     }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
+        const lat = pos.coords.latitude.toFixed(6);
+        const lng = pos.coords.longitude.toFixed(6);
         setForm((f) => ({
           ...f,
-          latitude: pos.coords.latitude.toFixed(6),
-          longitude: pos.coords.longitude.toFixed(6),
+          latitude: lat,
+          longitude: lng,
         }));
-        toast.success('Location captured.');
+        toast.success('GPS location captured.');
+
+        // Auto-populate street address from Nominatim
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.display_name) {
+              setForm((f) => ({ ...f, address: data.display_name }));
+            }
+          }
+        } catch (e) {
+          console.warn('Reverse geocode error:', e);
+        }
+
         setLocating(false);
       },
       (err) => {

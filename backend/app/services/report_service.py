@@ -132,7 +132,22 @@ def _to_report_out(db: Session, report: Report) -> ReportOut:
         "images": images,
         "priority": latest_priority,
         "verifications": report.verifications,
+        "nearby_facilities": [],
     }
+
+    try:
+        from app.services.geospatial_service import get_nearby_hospitals, get_nearby_schools
+        hospitals = get_nearby_hospitals(report.latitude, report.longitude, 5000)[:2]
+        schools = get_nearby_schools(report.latitude, report.longitude, 5000)[:2]
+        facilities = []
+        for h in hospitals:
+            facilities.append({"type": "Hospital", "name": h.get("name", "Medical Center"), "distance_km": h.get("distance_km", 0.0)})
+        for s in schools:
+            facilities.append({"type": "School", "name": s.get("name", "Educational Facility"), "distance_km": s.get("distance_km", 0.0)})
+        report_dict["nearby_facilities"] = facilities
+    except Exception as e:
+        print(f"[reports] Could not populate nearby facilities: {e}")
+
     return ReportOut.model_validate(report_dict)
 
 

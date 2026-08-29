@@ -142,6 +142,7 @@ class ReportOut(BaseModel):
     images: List[ImageOut] = []
     priority: Optional[PriorityScoreOut] = None
     verifications: List[VerificationOut] = []
+    nearby_facilities: Optional[List[Dict]] = []
 
 
 class ReportListItem(BaseModel):
