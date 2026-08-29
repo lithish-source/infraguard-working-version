@@ -44,14 +44,22 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 10
     ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp"]
 
-    # AI
+    # AI & ML Models
     AI_MODEL_PATH: str = "./ai/models/severity_classifier.joblib"
+    PRIORITY_ML_MODEL_PATH: str = "./ai/models/priority_regressor.joblib"
+    YOLO_MODEL_PATH: str = "./ai/models/yolov12_damage.pt"
     AI_CONFIDENCE_THRESHOLD: float = 0.55
     AI_USE_GPU: bool = False
 
+    # Geospatial / OpenGeoMap / Overpass APIs
+    OPENGEOMAP_API_KEY: str = ""
+    GEOAPIFY_API_KEY: str = ""
+    OPENROUTESERVICE_API_KEY: str = ""
+    OVERPASS_URL: str = "https://overpass-api.de/api/interpreter"
+
     # LLM (optional — for Llama 3 / GPT-4o Vision image analysis)
-    # If LLM_API_KEY is unset, the system falls back to scikit-learn classifier.
-    LLM_API_KEY: str = ""  # set this to enable LLM image analysis
+    # If LLM_API_KEY is unset, the system falls back to YOLO + scikit-learn classifier.
+    LLM_API_KEY: str = ""
     LLM_API_BASE_URL: str = "https://api.groq.com/openai/v1"
     LLM_VISION_MODEL: str = "meta-llama/llama-4-scout-17b-16e-instruct"
 

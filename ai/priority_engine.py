@@ -211,14 +211,37 @@ class PriorityEngine:
         else:
             urgency, response = "Minimal", "Within 7 days"
 
+        # --- ML Model Prediction ---
+        from ai.priority_ml_model import PriorityMLModel
+        ml_model = PriorityMLModel()
+        road_mapping = {"highway": 1.0, "major_road": 0.85, "arterial": 0.7, "collector": 0.55, "local": 0.35, "residential": 0.25}
+        road_imp = road_mapping.get((road_class or "").lower(), 0.5)
+        pop_imp = _normalize(float(population or 50000), 5000.0, 500000.0)
+        infra_crits = {"WATER": 0.9, "POWER": 0.95, "BRIDGE": 0.9, "TRAFFIC": 0.85, "HOSPITAL": 1.0, "ROAD": 0.7, "DRAINAGE": 0.65}
+        infra_crit = infra_crits.get((infrastructure_code or "").upper(), 0.5)
+        hours_old = max(0.0, (now - created_at).total_seconds() / 3600.0)
+
+        ml_result = ml_model.predict(
+            severity_score=base_score,
+            hospital_dist_km=hospital_distance_km,
+            school_dist_km=school_distance_km,
+            road_importance=road_imp,
+            population_impact=pop_imp,
+            infra_criticality=infra_crit,
+            verification_count=verification_count,
+            time_urgency_hours=hours_old,
+        )
+
         # Build component dict for backward compatibility with the API / frontend
-        # Normalise boosters to 0–1 range for display (as fraction of their max)
         components = {"severity_component": base_score / 100.0}
         for name, max_boost, _desc in BOOSTER_CONFIG:
             components[f"{name}_component"] = round(boosters[name] / max_boost, 4) if max_boost else 0.0
 
         return {
             "score": final_score,
+            "ml_score": ml_result["ml_score"],
+            "ml_model_used": ml_result["model_used"],
+            "ml_confidence": ml_result["confidence"],
             "rank": None,
             "base_severity_score": base_score,
             "total_boost": round(total_boost, 2),

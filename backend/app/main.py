@@ -35,16 +35,17 @@ def _init_db():
 
 
 def _ensure_ai_model():
-    """Train a model on first run if no model file exists."""
+    """Train models on first run if model files do not exist."""
     model_path = settings.AI_MODEL_PATH
-    if not os.path.exists(model_path):
+    priority_model_path = settings.PRIORITY_ML_MODEL_PATH
+    if not os.path.exists(model_path) or not os.path.exists(priority_model_path):
         try:
-            print("[main] No AI model found — training a default model...")
+            print("[main] Training default AI severity and priority ML models...")
             from ai.train import train
             train(n_per_class=200)
-            print("[main] Default AI model trained.")
+            print("[main] Default AI and Priority ML models trained.")
         except Exception as e:
-            print(f"[main] Could not train default AI model: {e}")
+            print(f"[main] Could not train default AI models: {e}")
 
 
 @asynccontextmanager

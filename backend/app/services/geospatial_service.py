@@ -80,13 +80,43 @@ def _run_overpass_query(query: str, timeout: float = 15.0, retries: int = 2) -> 
     raise RuntimeError(f"All Overpass endpoints failed. Last error: {last_error}")
 
 
+def _query_geomap_api(lat: float, lng: float, categories: str, radius_m: int, api_key: str) -> List[Dict]:
+    """Query OpenGeoMap / Geoapify Places API when an API key is provided."""
+    url = f"https://api.geoapify.com/v2/places?categories={categories}&filter=circle:{lng},{lat},{radius_m}&limit=10&apiKey={api_key}"
+    try:
+        with httpx.Client(timeout=8.0) as client:
+            res = client.get(url)
+            if res.status_code == 200:
+                features = res.json().get("features", [])
+                places = []
+                for f in features:
+                    props = f.get("properties", {})
+                    plat, plng = props.get("lat", lat), props.get("lon", lng)
+                    name = props.get("name") or props.get("formatted") or "Facility"
+                    dist = props.get("distance", 0) / 1000.0
+                    if not dist and plat and plng:
+                        dist = _haversine_km(lat, lng, plat, plng)
+                    places.append({"name": name, "lat": plat, "lng": plng, "distance_km": round(dist, 3)})
+                places.sort(key=lambda p: p["distance_km"])
+                return places
+    except Exception as e:
+        print(f"[geospatial] GeoMap API error: {e}")
+    return []
+
+
 @lru_cache(maxsize=4096)
 def get_nearby_hospitals(lat: float, lng: float, radius_m: int = 5000) -> List[Dict]:
-    """Query Overpass for hospitals within `radius_m` of (lat, lng).
-
-    Returns a list of {name, lat, lng, distance_km} sorted by distance.
-    Cached per rounded lat/lng (~110m grid).
+    """Query for hospitals and clinics within `radius_m` of (lat, lng).
+    
+    Uses OpenGeoMap API if key configured, otherwise queries global OpenStreetMap Overpass.
     """
+    from app.core.config import settings
+    api_key = settings.OPENGEOMAP_API_KEY or settings.GEOAPIFY_API_KEY
+    if api_key:
+        geo_res = _query_geomap_api(lat, lng, "healthcare.hospital,healthcare.clinic", radius_m, api_key)
+        if geo_res:
+            return geo_res
+
     lat_r, lng_r = _round_coord(lat), _round_coord(lng)
     query = f"""
     [out:json][timeout:25];
@@ -124,7 +154,14 @@ def get_nearby_hospitals(lat: float, lng: float, radius_m: int = 5000) -> List[D
 
 @lru_cache(maxsize=4096)
 def get_nearby_schools(lat: float, lng: float, radius_m: int = 3000) -> List[Dict]:
-    """Query Overpass for schools within `radius_m` of (lat, lng)."""
+    """Query for schools, colleges, and educational facilities within `radius_m` of (lat, lng)."""
+    from app.core.config import settings
+    api_key = settings.OPENGEOMAP_API_KEY or settings.GEOAPIFY_API_KEY
+    if api_key:
+        geo_res = _query_geomap_api(lat, lng, "education.school,education.college,education.university", radius_m, api_key)
+        if geo_res:
+            return geo_res
+
     lat_r, lng_r = _round_coord(lat), _round_coord(lng)
     query = f"""
     [out:json][timeout:25];

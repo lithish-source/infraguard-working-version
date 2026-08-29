@@ -67,12 +67,16 @@ def train(
         },
         output_path,
     )
-    print(f"[train] Saved model to {output_path}")
+    # Also train Priority ML model
+    from ai.priority_ml_model import train_priority_model
+    priority_res = train_priority_model()
+
     return {
         "accuracy": float(acc),
         "report": report,
         "confusion_matrix": cm,
         "model_path": output_path,
+        "priority_ml": priority_res,
     }
 
 
