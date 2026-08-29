@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import (
-    BigInteger,
+    Integer,
     Boolean,
     CheckConstraint,
     Column,
@@ -53,7 +53,7 @@ class TimestampMixin:
 class User(Base, TimestampMixin):
     __tablename__ = "users"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     full_name = Column(String(150), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     phone = Column(String(20), nullable=True)
@@ -61,7 +61,7 @@ class User(Base, TimestampMixin):
     role = Column(String(20), nullable=False, default=ROLE_CITIZEN, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
     last_login_at = Column(DateTime, nullable=True)
-    district_id = Column(BigInteger, ForeignKey("districts.id", ondelete="SET NULL"), nullable=True)
+    district_id = Column(Integer, ForeignKey("districts.id", ondelete="SET NULL"), nullable=True)
 
     reports = relationship("Report", back_populates="user", cascade="all, delete-orphan")
     verifications = relationship("Verification", back_populates="user")
@@ -72,7 +72,7 @@ class User(Base, TimestampMixin):
 class District(Base, TimestampMixin):
     __tablename__ = "districts"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(150), nullable=False, unique=True, index=True)
     code = Column(String(20), nullable=True, index=True)
     state = Column(String(100), nullable=True)
@@ -85,7 +85,7 @@ class District(Base, TimestampMixin):
 class InfrastructureType(Base, TimestampMixin):
     __tablename__ = "infrastructure_types"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, unique=True, index=True)
     code = Column(String(20), nullable=False, unique=True)
     description = Column(Text, nullable=True)
@@ -96,13 +96,13 @@ class InfrastructureType(Base, TimestampMixin):
 class Report(Base, TimestampMixin):
     __tablename__ = "reports"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     reference_code = Column(String(30), unique=True, index=True, nullable=False)
 
-    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    district_id = Column(BigInteger, ForeignKey("districts.id", ondelete="SET NULL"), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    district_id = Column(Integer, ForeignKey("districts.id", ondelete="SET NULL"), nullable=True, index=True)
     infrastructure_type_id = Column(
-        BigInteger,
+        Integer,
         ForeignKey("infrastructure_types.id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
@@ -164,9 +164,10 @@ class Report(Base, TimestampMixin):
 class Image(Base, TimestampMixin):
     __tablename__ = "images"
 
-    id = Column(BigInteger, primary_key=True, index=True)
-    report_id = Column(BigInteger, ForeignKey("reports.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    report_id = Column(        Integer,
+        ForeignKey("reports.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     file_path = Column(String(500), nullable=False)
     file_url = Column(String(500), nullable=False)
     file_size_bytes = Column(Integer, nullable=True)
@@ -182,9 +183,10 @@ class Image(Base, TimestampMixin):
 class Verification(Base, TimestampMixin):
     __tablename__ = "verifications"
 
-    id = Column(BigInteger, primary_key=True, index=True)
-    report_id = Column(BigInteger, ForeignKey("reports.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    report_id = Column(        Integer,
+        ForeignKey("reports.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     severity_vote = Column(String(20), nullable=True)
     comment = Column(Text, nullable=True)
     is_confirmed = Column(Boolean, default=True, nullable=False)
@@ -206,8 +208,9 @@ class Verification(Base, TimestampMixin):
 class PriorityScore(Base, TimestampMixin):
     __tablename__ = "priority_scores"
 
-    id = Column(BigInteger, primary_key=True, index=True)
-    report_id = Column(BigInteger, ForeignKey("reports.id", ondelete="CASCADE"), nullable=False, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    report_id = Column(        Integer,
+        ForeignKey("reports.id", ondelete="CASCADE"), nullable=False, index=True)
     score = Column(Float, nullable=False, index=True)
     rank = Column(Integer, nullable=True, index=True)
 
@@ -231,9 +234,9 @@ class PriorityScore(Base, TimestampMixin):
 class Notification(Base, TimestampMixin):
     __tablename__ = "notifications"
 
-    id = Column(BigInteger, primary_key=True, index=True)
-    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    report_id = Column(BigInteger, ForeignKey("reports.id", ondelete="CASCADE"), nullable=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    report_id = Column(Integer, ForeignKey("reports.id", ondelete="CASCADE"), nullable=True)
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     type = Column(String(50), default="info", nullable=False)
@@ -246,9 +249,10 @@ class Notification(Base, TimestampMixin):
 class AdminAction(Base, TimestampMixin):
     __tablename__ = "admin_actions"
 
-    id = Column(BigInteger, primary_key=True, index=True)
-    admin_id = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    report_id = Column(BigInteger, ForeignKey("reports.id", ondelete="CASCADE"), nullable=False, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    admin_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    report_id = Column(        Integer,
+        ForeignKey("reports.id", ondelete="CASCADE"), nullable=False, index=True)
     action = Column(String(50), nullable=False)
     previous_value = Column(Text, nullable=True)
     new_value = Column(Text, nullable=True)
