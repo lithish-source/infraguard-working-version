@@ -175,8 +175,10 @@ def get_nearby_schools(lat: float, lng: float, radius_m: int = 5000) -> List[Dic
       way["amenity"="college"](around:{radius_m},{lat_r},{lng_r});
       node["amenity"="university"](around:{radius_m},{lat_r},{lng_r});
       way["amenity"="university"](around:{radius_m},{lat_r},{lng_r});
+      node(around:{radius_m},{lat_r},{lng_r})["name"~"School|Matric|Vidyalaya|Academy|Kindergarten|Vidya|College|Nursery|Pranavan",i];
+      way(around:{radius_m},{lat_r},{lng_r})["name"~"School|Matric|Vidyalaya|Academy|Kindergarten|Vidya|College|Nursery|Pranavan",i];
     );
-    out center 15;
+    out center 25;
     """
     try:
         result = _run_overpass_query(query)
