@@ -1,6 +1,7 @@
 """Analytics service for the admin dashboard & analytics page."""
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -35,6 +36,21 @@ from app.schemas import (
 SEVERITY_ORDER = [SEVERITY_LOW, SEVERITY_MODERATE, SEVERITY_HIGH, SEVERITY_CRITICAL]
 
 
+def _parse_dt(val) -> Optional[datetime]:
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val
+    try:
+        # Strip trailing fraction/tz if needed
+        clean = str(val).replace("Z", "").split("+")[0]
+        if "." in clean:
+            clean = clean.split(".")[0]
+        return datetime.fromisoformat(clean)
+    except Exception:
+        return None
+
+
 def dashboard_summary(db: Session) -> DashboardSummary:
     total = db.execute(select(func.count(Report.id))).scalar_one()
     pending = db.execute(select(func.count(Report.id)).where(Report.status == STATUS_REPORTED)).scalar_one()
@@ -49,14 +65,17 @@ def dashboard_summary(db: Session) -> DashboardSummary:
     verifications = db.execute(select(func.count(Verification.id))).scalar_one()
 
     # Avg response time (hours) = resolved_at - created_at for resolved reports
-    avg_row = db.execute(
-        select(
-            func.avg(
-                func.extract("epoch", Report.resolved_at - Report.created_at) / 3600.0
-            )
-        ).where(Report.status == STATUS_RESOLVED, Report.resolved_at.isnot(None))
-    ).scalar_one()
-    avg_response = float(avg_row) if avg_row else None
+    resolved_reports = db.execute(
+        select(Report.created_at, Report.resolved_at)
+        .where(Report.status == STATUS_RESOLVED, Report.resolved_at.isnot(None))
+    ).all()
+    durations = []
+    for c_at_raw, r_at_raw in resolved_reports:
+        c_at = _parse_dt(c_at_raw)
+        r_at = _parse_dt(r_at_raw)
+        if c_at and r_at and r_at >= c_at:
+            durations.append((r_at - c_at).total_seconds() / 3600.0)
+    avg_response = (sum(durations) / len(durations)) if durations else None
     response_rate = (resolved / total * 100.0) if total else 0.0
 
     return DashboardSummary(
@@ -88,74 +107,91 @@ def severity_distribution(db: Session) -> List[SeverityDistributionItem]:
 
 
 def category_distribution(db: Session) -> List[CategoryDistributionItem]:
-    rows = db.execute(
-        select(
-            InfrastructureType.name,
-            func.count(Report.id),
-            func.count(Report.id).filter(
-                (Report.ai_severity == SEVERITY_CRITICAL) | (Report.final_severity == SEVERITY_CRITICAL)
-            ),
+    categories = db.execute(select(InfrastructureType)).scalars().all()
+    items = []
+    for cat in categories:
+        reports = db.execute(
+            select(Report).where(Report.infrastructure_type_id == cat.id)
+        ).scalars().all()
+        critical_count = sum(
+            1 for r in reports
+            if (r.ai_severity == SEVERITY_CRITICAL or r.final_severity == SEVERITY_CRITICAL)
         )
-        .join(Report, Report.infrastructure_type_id == InfrastructureType.id)
-        .group_by(InfrastructureType.name)
-    ).all()
-    return [CategoryDistributionItem(category=r[0], count=r[1], critical_count=r[2]) for r in rows]
+        items.append(CategoryDistributionItem(
+            category=cat.name,
+            count=len(reports),
+            critical_count=critical_count,
+        ))
+    return items
 
 
 def monthly_trend(db: Session, months: int = 6) -> List[MonthlyTrendItem]:
     since = datetime.utcnow() - timedelta(days=months * 30)
-    rows = db.execute(
-        select(
-            func.to_char(Report.created_at, "YYYY-MM"),
-            func.count(Report.id),
-            func.count(Report.id).filter(Report.status == STATUS_RESOLVED),
-        )
-        .where(Report.created_at >= since)
-        .group_by(func.to_char(Report.created_at, "YYYY-MM"))
-        .order_by(func.to_char(Report.created_at, "YYYY-MM"))
-    ).all()
-    return [MonthlyTrendItem(month=r[0], reports=r[1], resolved=r[2]) for r in rows]
+    reports = db.execute(select(Report.created_at, Report.status)).all()
+    data = defaultdict(lambda: {"reports": 0, "resolved": 0})
+    for created_at_raw, status in reports:
+        dt = _parse_dt(created_at_raw)
+        if dt and dt >= since:
+            m = dt.strftime("%Y-%m")
+            data[m]["reports"] += 1
+            if status == STATUS_RESOLVED:
+                data[m]["resolved"] += 1
+    items = [
+        MonthlyTrendItem(month=m, reports=counts["reports"], resolved=counts["resolved"])
+        for m, counts in sorted(data.items())
+    ]
+    return items
 
 
 def district_analytics(db: Session) -> List[DistrictAnalyticsItem]:
-    rows = db.execute(
-        select(
-            District.name,
-            func.count(Report.id),
-            func.count(Report.id).filter(
-                (Report.ai_severity == SEVERITY_CRITICAL) | (Report.final_severity == SEVERITY_CRITICAL)
-            ),
-            func.count(Report.id).filter(Report.status == STATUS_RESOLVED),
-            func.avg(PriorityScore.score),
+    districts = db.execute(select(District)).scalars().all()
+    items = []
+    for d in districts:
+        reports = db.execute(
+            select(Report).where(Report.district_id == d.id)
+        ).scalars().all()
+        critical_count = sum(
+            1 for r in reports
+            if (r.ai_severity == SEVERITY_CRITICAL or r.final_severity == SEVERITY_CRITICAL)
         )
-        .join(Report, Report.district_id == District.id, isouter=True)
-        .outerjoin(PriorityScore, PriorityScore.report_id == Report.id)
-        .group_by(District.name)
-    ).all()
-    return [
-        DistrictAnalyticsItem(
-            district=r[0] or "Unknown",
-            reports=r[1] or 0,
-            critical=r[2] or 0,
-            resolved=r[3] or 0,
-            avg_priority=round(float(r[4]), 2) if r[4] else 0.0,
-        )
-        for r in rows
-    ]
+        resolved_count = sum(1 for r in reports if r.status == STATUS_RESOLVED)
+        scores = []
+        for r in reports:
+            ps = db.execute(
+                select(PriorityScore)
+                .where(PriorityScore.report_id == r.id)
+                .order_by(PriorityScore.created_at.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+            if ps and ps.score is not None:
+                scores.append(ps.score)
+        avg_priority = round(sum(scores) / len(scores), 2) if scores else 0.0
+        items.append(DistrictAnalyticsItem(
+            district=d.name,
+            reports=len(reports),
+            critical=critical_count,
+            resolved=resolved_count,
+            avg_priority=avg_priority,
+        ))
+    return items
 
 
 def response_time_analytics(db: Session) -> dict:
-    rows = db.execute(
-        select(
-            func.avg(func.extract("epoch", Report.resolved_at - Report.created_at) / 3600.0),
-            func.min(func.extract("epoch", Report.resolved_at - Report.created_at) / 3600.0),
-            func.max(func.extract("epoch", Report.resolved_at - Report.created_at) / 3600.0),
-        ).where(Report.status == STATUS_RESOLVED, Report.resolved_at.isnot(None))
-    ).one()
+    resolved_reports = db.execute(
+        select(Report.created_at, Report.resolved_at)
+        .where(Report.status == STATUS_RESOLVED, Report.resolved_at.isnot(None))
+    ).all()
+    durations = [
+        (r_at - c_at).total_seconds() / 3600.0
+        for c_at, r_at in resolved_reports
+        if c_at and r_at and r_at >= c_at
+    ]
+    if not durations:
+        return {"avg_hours": None, "min_hours": None, "max_hours": None}
     return {
-        "avg_hours": round(float(rows[0]), 2) if rows[0] else None,
-        "min_hours": round(float(rows[1]), 2) if rows[1] else None,
-        "max_hours": round(float(rows[2]), 2) if rows[2] else None,
+        "avg_hours": round(sum(durations) / len(durations), 2),
+        "min_hours": round(min(durations), 2),
+        "max_hours": round(max(durations), 2),
     }
 
 

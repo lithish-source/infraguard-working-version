@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -152,9 +153,41 @@ public class ReportService {
         };
         PageRequest pageable = PageRequest.of(Math.max(0, page - 1), Math.min(pageSize, 100), sort);
 
-        Page<Report> result = reportRepository.findWithFilters(
-            status, severity, categoryId, districtId, search, null, null, pageable
-        );
+        Specification<Report> spec = (root, query, cb) -> {
+            if (query != null && !Long.class.equals(query.getResultType()) && !long.class.equals(query.getResultType())) {
+                root.fetch("infrastructureType", jakarta.persistence.criteria.JoinType.LEFT);
+                root.fetch("district", jakarta.persistence.criteria.JoinType.LEFT);
+                root.fetch("user", jakarta.persistence.criteria.JoinType.LEFT);
+                query.distinct(true);
+            }
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            if (status != null && !status.isBlank()) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+            if (severity != null && !severity.isBlank()) {
+                predicates.add(cb.or(
+                    cb.equal(root.get("aiSeverity"), severity),
+                    cb.equal(root.get("finalSeverity"), severity)
+                ));
+            }
+            if (categoryId != null) {
+                predicates.add(cb.equal(root.get("infrastructureType").get("id"), categoryId));
+            }
+            if (districtId != null) {
+                predicates.add(cb.equal(root.get("district").get("id"), districtId));
+            }
+            if (search != null && !search.isBlank()) {
+                String pattern = "%" + search.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("title")), pattern),
+                    cb.like(cb.lower(root.get("description")), pattern),
+                    cb.like(cb.lower(root.get("referenceCode")), pattern)
+                ));
+            }
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        Page<Report> result = reportRepository.findAll(spec, pageable);
 
         List<ReportListItem> items = result.getContent().stream().map(r -> {
             PriorityScore ps = priorityScoreRepository
@@ -510,5 +543,72 @@ public class ReportService {
                 .build() : null)
             .verifications(verifs)
             .build();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getMapData(Long districtId, Long categoryId, String severity, String status) {
+        List<Report> reports = reportRepository.findForMap(districtId, categoryId, severity, status);
+        List<Map<String, Object>> features = new ArrayList<>();
+        for (Report r : reports) {
+            String sev = r.getFinalSeverity() != null ? r.getFinalSeverity() : r.getAiSeverity();
+            String sevColor = switch (sev != null ? sev : "") {
+                case "Low" -> "#22c55e";
+                case "Moderate" -> "#f59e0b";
+                case "High" -> "#ef4444";
+                case "Critical" -> "#7c3aed";
+                default -> "#6b7280";
+            };
+            PriorityScore ps = priorityScoreRepository.findFirstByReportIdOrderByCreatedAtDesc(r.getId()).orElse(null);
+            String primaryImg = r.getImages().stream()
+                .filter(Image::getIsPrimary).findFirst()
+                .or(() -> r.getImages().stream().findFirst())
+                .map(Image::getFileUrl).orElse(null);
+
+            Map<String, Object> props = new HashMap<>();
+            props.put("id", r.getId());
+            props.put("reference_code", r.getReferenceCode());
+            props.put("title", r.getTitle());
+            props.put("severity", sev);
+            props.put("severity_color", sevColor);
+            props.put("status", r.getStatus());
+            props.put("category", r.getInfrastructureType() != null ? r.getInfrastructureType().getName() : null);
+            props.put("category_icon", r.getInfrastructureType() != null ? r.getInfrastructureType().getIcon() : null);
+            props.put("verification_count", r.getVerificationCount());
+            props.put("credibility_score", r.getCredibilityScore());
+            props.put("priority_score", ps != null ? ps.getScore() : null);
+            props.put("priority_rank", ps != null ? ps.getRank() : null);
+            props.put("image_url", primaryImg);
+            props.put("created_at", r.getCreatedAt() != null ? r.getCreatedAt().toString() : null);
+
+            Map<String, Object> geom = Map.of(
+                "type", "Point",
+                "coordinates", List.of(r.getLongitude(), r.getLatitude())
+            );
+
+            features.add(Map.of(
+                "type", "Feature",
+                "geometry", geom,
+                "properties", props
+            ));
+        }
+        return Map.of("type", "FeatureCollection", "features", features);
+    }
+
+    @Transactional(readOnly = true)
+    public List<List<Object>> getHeatmap(String severity) {
+        List<Report> reports = reportRepository.findForMap(null, null, severity, null);
+        List<List<Object>> points = new ArrayList<>();
+        for (Report r : reports) {
+            String sev = r.getFinalSeverity() != null ? r.getFinalSeverity() : r.getAiSeverity();
+            double weight = switch (sev != null ? sev : "") {
+                case "Low" -> 0.3;
+                case "Moderate" -> 0.6;
+                case "High" -> 0.85;
+                case "Critical" -> 1.0;
+                default -> 0.4;
+            };
+            points.add(List.of(r.getLatitude(), r.getLongitude(), weight));
+        }
+        return points;
     }
 }

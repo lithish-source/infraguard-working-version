@@ -59,16 +59,20 @@ public class ReportController {
     }
 
     @GetMapping("/map")
-    public ResponseEntity<Map<String, Object>> getMapData() {
-        // TODO: implement GeoJSON FeatureCollection assembly
-        // For now, return empty FeatureCollection
-        return ResponseEntity.ok(Map.of("type", "FeatureCollection", "features", List.of()));
+    public ResponseEntity<Map<String, Object>> getMapData(
+        @RequestParam(value = "district_id", required = false) Long districtId,
+        @RequestParam(value = "category_id", required = false) Long categoryId,
+        @RequestParam(required = false) String severity,
+        @RequestParam(required = false) String status
+    ) {
+        return ResponseEntity.ok(reportService.getMapData(districtId, categoryId, severity, status));
     }
 
     @GetMapping("/heatmap")
-    public ResponseEntity<Map<String, Object>> getHeatmap() {
-        // TODO: return [[lat, lng, weight], ...]
-        return ResponseEntity.ok(Map.of("points", List.of()));
+    public ResponseEntity<Map<String, Object>> getHeatmap(
+        @RequestParam(required = false) String severity
+    ) {
+        return ResponseEntity.ok(Map.of("points", reportService.getHeatmap(severity)));
     }
 
     @GetMapping("/{id}")

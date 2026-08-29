@@ -38,6 +38,7 @@ spring:
       max-request-size: 60MB
 
   jackson:
+    property-naming-strategy: SNAKE_CASE
     serialization:
       write-dates-as-timestamps: false
     default-property-inclusion: non_null

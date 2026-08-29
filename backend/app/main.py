@@ -97,6 +97,7 @@ def root():
 
 
 @app.get("/health", tags=["health"])
+@app.get(f"{settings.API_V1_PREFIX}/health", tags=["health"])
 def health():
     from app.services.llm_service import get_llm_status
     return {
