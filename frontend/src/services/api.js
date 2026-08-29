@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-// Backend URL: uses VITE_API_URL env if provided, falls back to relative /api/v1 for proxy
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD
-  ? 'https://infraguard-backend-sz6b.onrender.com/api/v1'
-  : '/api/v1');
+// Backend URL: uses VITE_API_URL if specified, otherwise uses relative /api/v1 for both local proxy and production
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
