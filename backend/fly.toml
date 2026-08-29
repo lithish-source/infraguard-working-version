@@ -1,0 +1,19 @@
+app = "infraguard-backend"
+primary_region = "bom"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 0
+
+[env]
+  DATABASE_URL = "sqlite:///./infraguard.db"
+  UPLOAD_DIR = "/tmp/uploads"
+  DEFAULT_ADMIN_EMAIL = "admin@infraguard.gov"
+  DEFAULT_ADMIN_PASSWORD = "Admin@12345"
+  DEFAULT_ADMIN_NAME = "System Administrator"
