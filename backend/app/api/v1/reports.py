@@ -25,19 +25,31 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 async def create_report(
     title: str = Form(...),
     description: str = Form(...),
-    category_id: int = Form(...),
+    category_id: str = Form(...),
     latitude: float = Form(...),
     longitude: float = Form(...),
     address: Optional[str] = Form(None),
-    district_id: Optional[int] = Form(None),
+    district_id: Optional[str] = Form(None),
     images: List[UploadFile] = File(default=[]),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
     background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
+    try:
+        cat_id = int(category_id)
+    except (ValueError, TypeError):
+        cat_id = 1
+
+    dist_id = None
+    if district_id and str(district_id).strip():
+        try:
+            dist_id = int(district_id)
+        except (ValueError, TypeError):
+            dist_id = None
+
     payload = ReportCreate(
-        title=title, description=description, category_id=category_id,
-        latitude=latitude, longitude=longitude, address=address, district_id=district_id,
+        title=title, description=description, category_id=cat_id,
+        latitude=latitude, longitude=longitude, address=address or None, district_id=dist_id,
     )
     return await report_service.create_report(
         db, user, payload, images, get_ai_analyzer(),

@@ -262,9 +262,9 @@ async def create_report(
 
     db.flush()
 
-    # Initial priority score (without AI data — recomputed after background analysis)
+    # Initial priority score (instant baseline — fully recomputed with Overpass in background)
     from app.services.priority_service import compute_and_save_priority
-    compute_and_save_priority(db, report, ai_analyzer_used=False)
+    compute_and_save_priority(db, report, ai_analyzer_used=False, skip_overpass=True)
 
     # Notify user
     db.add(Notification(
