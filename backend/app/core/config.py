@@ -27,15 +27,8 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # Database (SQLite by default for Vercel / local deployment)
-    DATABASE_URL: str = (
-        "sqlite:///./infraguard.db"
-    )
-    POSTGRES_USER: str = "infraguard"
-    POSTGRES_PASSWORD: str = "infraguard"
-    POSTGRES_DB: str = "infraguard"
-    POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: int = 5432
+    # Database (SQLite)
+    DATABASE_URL: str = "sqlite:///./infraguard.db"
 
     # JWT
     JWT_SECRET_KEY: str = "change_this_to_a_long_random_string_in_production_5f8a2b9c1e7d"

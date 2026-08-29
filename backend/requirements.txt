@@ -5,7 +5,6 @@ python-multipart==0.0.9
 
 # Database
 SQLAlchemy==2.0.29
-alembic==1.13.1
 
 # Auth
 pyjwt==2.8.0
